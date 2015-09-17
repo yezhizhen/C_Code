@@ -1,0 +1,7 @@
+input:
+12345678
+1234567
+sizeof(char):1
+address of a[0]:0xffc438fc
+address of b[0]:0xffc43904
+123456781234567##1234567##

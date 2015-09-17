@@ -1,0 +1,4 @@
+string2 = 1234
+string3 = 1234
+array2 = { 1 0 0 0 0 }
+array3 = { 1 2 3 4 5 }

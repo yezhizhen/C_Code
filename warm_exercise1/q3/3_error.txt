@@ -1,0 +1,7 @@
+3.c: In function ‘main’:
+3.c:16:2: warning: passing argument 1 of ‘process_array’ from incompatible pointer type [enabled by default]
+  process_array(array);
+  ^
+3.c:7:6: note: expected ‘int (*)[8]’ but argument is of type ‘int **’
+ void process_array(int array[ROWS][COLS]) {
+      ^

@@ -13,16 +13,39 @@
 int main()
 {
 	//255 characters allowed
-	char *in = malloc (sizeof(*in)*(MAXIMUM_P_SIZE));
+	char *in = malloc (sizeof(*in)*(MAXIMUM_P_SIZE+1));
+	char *token;
+	int i; 
+	char bufferclear;
+	int continueflag=0;
 	while(TRUE)
 	{
 		//basic prestring: path and shell name
 		printf("[My Shell:");
 		printf("%s",getenv("PWD"));
 		printf("]$ ");
-		//reading input
+		//reading input and check if exceeds limit
 		//fgets(in,MAXIMUM_P_SIZE,stdin);
-		scanf("%255s", in);
+		scanf("%256s", in);
+		for(i=0;i<=256;i++)
+		{
+			if(in[i]=='\0') 
+			{
+				if(i==256)
+				{ 
+					printf("Exceed maximum length 255\n");
+					//clear the input buffer
+					while((bufferclear=getchar())!='\n'&& bufferclear != EOF);
+					continueflag = TRUE;	
+					break;	
+				}
+				else break;
+			}
+		}
+		if(continueflag)
+		{
+			continue;
+		}
 		//switch case		
 		if(strcmp(in,"help") == STRING_EQUAL)
 		{
@@ -40,7 +63,5 @@ int main()
 		}
 		else NOT_FOUND(in); 
 	}
-
-
 	return 0;
 }

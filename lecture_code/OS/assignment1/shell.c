@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <string.h>
 #define TRUE 1
 #define STRING_EQUAL 0
 #define MAXIMUM_SIZE 255
@@ -14,10 +15,12 @@ int main()
 {
 	//255 characters allowed
 	char *in = malloc (sizeof(*in)*(MAXIMUM_P_SIZE+1));
-	char *token;
+//	char (*tokens)[256];
 	int i; 
-	char bufferclear;
+	char buffer;
 	int continueflag=0;
+	int k=0;
+	int position=0;
 	while(TRUE)
 	{
 		//basic prestring: path and shell name
@@ -25,9 +28,19 @@ int main()
 		printf("%s",getenv("PWD"));
 		printf("]$ ");
 		//reading input and check if exceeds limit
-		//fgets(in,MAXIMUM_P_SIZE,stdin);
-		scanf("%256s", in);
-		for(i=0;i<=256;i++)
+		//if(scanf("%256s", in) == EOF) continue;
+		while((buffer=getchar())!='\n'&&buffer!=EOF)
+		{	
+			if(position==255)
+			{
+			printf("Exceed maximum length 255\n");
+			while((buffer=getchar())!='\n'&& buffer != EOF);
+			continueflag = TRUE;
+			break;
+			}
+			in[position++]=buffer;
+		}
+		/*for(i=0;i<=256;i++)
 		{
 			if(in[i]=='\0') 
 			{
@@ -35,23 +48,32 @@ int main()
 				{ 
 					printf("Exceed maximum length 255\n");
 					//clear the input buffer
-					while((bufferclear=getchar())!='\n'&& bufferclear != EOF);
+					while((buffer=getchar())!='\n'&& buffer != EOF);
 					continueflag = TRUE;	
 					break;	
 				}
 				else break;
 			}
 		}
+		*/
 		if(continueflag)
 		{
 			continue;
 		}
+		//try to get all parameters
+		//tokens[0] = strtok(in,' ');
+		//while(tokens[k]!=NULL)
+		//{
+		//	k++;
+		//	tokens[k] = strtok(NULL,' ');
+		//}
 		//switch case		
 		if(strcmp(in,"help") == STRING_EQUAL)
 		{
 			printf("List of functions you need\n");
 		}
-		else if(*in=='/')
+		//else if(*in=='') continue;
+		else if(*in=='/'||*in=='.')
 		{
 			//create and run child in if
 			if(!fork())

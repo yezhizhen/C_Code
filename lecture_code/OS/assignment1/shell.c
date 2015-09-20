@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <errno.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <string.h>
@@ -14,15 +15,16 @@
 int main()
 {
 	//255 characters allowed
-	char *in = malloc (sizeof(*in)*(MAXIMUM_P_SIZE+1));
-//	char (*tokens)[256];
+	char *in = malloc (sizeof(*in)*(MAXIMUM_P_SIZE));
 	int i; 
 	char buffer;
 	int continueflag=0;
 	int k=0;
 	int position=0;
+	char* result_path = malloc(sizeof(*result_path)*280);
 	while(TRUE)
 	{
+		position = 0;
 		//basic prestring: path and shell name
 		printf("[My Shell:");
 		printf("%s",getenv("PWD"));
@@ -40,6 +42,8 @@ int main()
 			}
 			in[position++]=buffer;
 		}
+		//if empty string 
+		if(!position) continue; 
 		/*for(i=0;i<=256;i++)
 		{
 			if(in[i]=='\0') 
@@ -78,12 +82,54 @@ int main()
 			//create and run child in if
 			if(!fork())
 			{
-				if(execl(in,in,NULL) == -1) NOT_FOUND(in);	
+				if(execl(in,in,NULL) == -1) 
+				{
+				//save the errno
+				int errsv = errno;
+				//printf("error number is%d\n",errsv);								
+				if(errsv==ENOENT)	NOT_FOUND(in);
+				else printf("%s: unknown error",in);	
+				}
 			}
 			//parent wait for the child
 			wait(NULL);
 		}
-		else NOT_FOUND(in); 
+		//deal with file name input
+		else
+		{
+			//child process
+			if(fork()==0)
+			{
+				strcpy(result_path,"/bin/");
+				strcat(result_path, in);
+				if(execl(result_path,result_path,NULL) == -1) 
+				{
+				//save the errno
+				int errsv = errno;
+				if(errsv!=ENOENT)	 printf("%s: unknown error",in);	
+				}
+
+				strcpy(result_path,"/usr/bin/");
+				strcat(result_path, in);				
+				if(execl(result_path,result_path,NULL) == -1) 
+				{
+				int errsv = errno;
+				if(errsv!=ENOENT)	 printf("%s: unknown error",in);	
+				}
+
+				strcpy(result_path,"./");
+				strcat(result_path, in);
+				if(execl(result_path,result_path,NULL) == -1) 
+				{
+				int errsv = errno;
+				//printf("error number is%d\n",errsv);								
+				if(errsv!=ENOENT)	 printf("%s: unknown error",in);	
+				else	NOT_FOUND(in);
+				}
+				
+			}
+			wait(NULL);
+		}
 	}
 	return 0;
 }

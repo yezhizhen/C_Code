@@ -4,6 +4,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #define TRUE 1
+#define STRING_EQUAL 0
 #define MAXIMUM_SIZE 255
 #define MAXIMUM_P_SIZE 256
 #define NOT_FOUND(in) printf("%s: command not found\n",in)
@@ -23,7 +24,7 @@ int main()
 		//fgets(in,MAXIMUM_P_SIZE,stdin);
 		scanf("%255s", in);
 		//switch case		
-		if(!strcmp(in,"help"))
+		if(strcmp(in,"help") == STRING_EQUAL)
 		{
 			printf("List of functions you need\n");
 		}

@@ -11,28 +11,31 @@
 #define MAXIMUM_P_SIZE 256
 #define NOT_FOUND(in) printf("%s: command not found\n",in)
 
-char** splitLine(char* str);
+int splitLine(char* str,char** tokens);
 void executeFile(char** tokens,int argc);
-
+void cdfunction(char** tokens, int length);
+void initialize(char** tokens);
 int main()
 {
 	//255 characters allowed
 	char *in = malloc (sizeof(*in)*(MAXIMUM_P_SIZE));
 	int i; 
 	char buffer;
+	int length;
 	int continueflag=0;
-	int k=0;
 	int position=0;
 	char* result_path = malloc(sizeof(*result_path)*280);
-	char** tokens = malloc(sizeof(*tokens)*255);
-	
+	char** tokens = malloc(sizeof(*tokens)*MAXIMUM_SIZE);
+	char* cwd = malloc(sizeof(*cwd)*200);	
 	while(TRUE)
 	{
 		position = 0;
-		memset(tokens,0,255*sizeof(*tokens));
+		//set all strings to null
+		initialize(tokens);
+		memset(in,'\0',MAXIMUM_P_SIZE);
 		//basic prestring: path and shell name
 		printf("[My Shell:");
-		printf("%s",getenv("PWD"));
+		printf("%s",getcwd(cwd,200));
 		printf("]$ ");
 		//reading input and check if exceeds limit
 		//if(scanf("%256s", in) == EOF) continue;
@@ -49,33 +52,10 @@ int main()
 		}
 		//if empty string 
 		if(!position) continue; 
-		/*for(i=0;i<=256;i++)
-		{
-			if(in[i]=='\0') 
-			{
-				if(i==256)
-				{ 
-					printf("Exceed maximum length 255\n");
-					//clear the input buffer
-					while((buffer=getchar())!='\n'&& buffer != EOF);
-					continueflag = TRUE;	
-					break;	
-				}
-				else break;
-			}
-		}
-		*/
-		if(continueflag)
-		{
-			continue;
-		}
+		if(continueflag)	continue;
+		
 		//try to get all parameters
-		//tokens[0] = strtok(in,' ');
-		//while(tokens[k]!=NULL)
-		//{
-		//	k++;
-		//	tokens[k] = strtok(NULL,' ');
-		//}
+		length = splitLine(in,tokens);			
 		//switch case		
 		if(strcmp(in,"help") == STRING_EQUAL)
 		{
@@ -87,7 +67,7 @@ int main()
 			//create and run child in if
 			if(!fork())
 			{
-				if(execl(in,in,NULL) == -1) 
+				if(execv(tokens[0],tokens) == -1) 
 				{
 				//save the errno
 				int errsv = errno;
@@ -97,7 +77,11 @@ int main()
 				}
 			}
 			//parent wait for the child
-			wait(NULL);
+		}
+		//deal with cd comand
+		else if(strcmp(tokens[0],"cd")==STRING_EQUAL)
+		{
+			cdfunction(tokens,length);
 		}
 		//deal with file name input
 		else
@@ -106,8 +90,9 @@ int main()
 			if(fork()==0)
 			{
 				strcpy(result_path,"/bin/");
-				strcat(result_path, in);
-				if(execl(result_path,result_path,NULL) == -1) 
+				strcat(result_path, tokens[0]);
+				tokens[0] = result_path;
+				if(execv(result_path,tokens) == -1) 
 				{
 				//save the errno
 				int errsv = errno;
@@ -115,16 +100,18 @@ int main()
 				}
 
 				strcpy(result_path,"/usr/bin/");
-				strcat(result_path, in);				
-				if(execl(result_path,result_path,NULL) == -1) 
+				strcat(result_path, tokens[0]);
+				tokens[0] = result_path;				
+				if(execv(result_path,tokens) == -1) 
 				{
 				int errsv = errno;
 				if(errsv!=ENOENT)	 printf("%s: unknown error",in);	
 				}
 
 				strcpy(result_path,"./");
-				strcat(result_path, in);
-				if(execl(result_path,result_path,NULL) == -1) 
+				strcat(result_path, tokens[0]);
+				tokens[0] = result_path;
+				if(execv(result_path,tokens) == -1) 
 				{
 				int errsv = errno;
 				//printf("error number is%d\n",errsv);								
@@ -133,22 +120,39 @@ int main()
 				}
 				
 			}
-			wait(NULL);
 		}
+		wait(NULL);
 	}
 	free(result_path);
 	free(tokens);
 	free(in);	
+	free(cwd);
 	return 0;
 }
 
-char** splitLine(char *str)
+int splitLine(char *str, char** tokens)
 {
-	
-
-	
+	int k=0;
+	tokens[0] = strtok(str," \t");    		
+	while(tokens[k]!=NULL)
+	{
+   		k++;
+    	tokens[k] = strtok(NULL," ");
+	}
+	return k;
 }
 
+void cdfunction(char** tokens, int length)
+{
+	if(length!=2) printf("cd: wrong number of arguments\n");
+	else if(chdir(tokens[1])==-1) printf("[%s]: cannot change directory\n",tokens[1]);
+}
 
-
-
+void initialize(char** tokens)
+{
+	int i;
+	for(i=0;i<MAXIMUM_SIZE;i++)
+	{
+		tokens[i]=0;
+	}	
+}

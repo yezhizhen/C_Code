@@ -11,6 +11,8 @@
 #define MAXIMUM_P_SIZE 256
 #define NOT_FOUND(in) printf("%s: command not found\n",in)
 
+char** splitLine(char* str);
+void executeFile(char** tokens,int argc);
 
 int main()
 {
@@ -22,9 +24,12 @@ int main()
 	int k=0;
 	int position=0;
 	char* result_path = malloc(sizeof(*result_path)*280);
+	char** tokens = malloc(sizeof(*tokens)*255);
+	
 	while(TRUE)
 	{
 		position = 0;
+		memset(tokens,0,255*sizeof(*tokens));
 		//basic prestring: path and shell name
 		printf("[My Shell:");
 		printf("%s",getenv("PWD"));
@@ -131,5 +136,19 @@ int main()
 			wait(NULL);
 		}
 	}
+	free(result_path);
+	free(tokens);
+	free(in);	
 	return 0;
 }
+
+char** splitLine(char *str)
+{
+	
+
+	
+}
+
+
+
+

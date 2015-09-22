@@ -12,18 +12,19 @@
 #define NOT_FOUND(in) printf("%s: command not found\n",in)
 
 int splitLine(char* str,char** tokens);
-void executeFile(char** tokens,int argc);
 void cdfunction(char** tokens, int length);
 void initialize(char** tokens);
+void executeFile(char *result_path,const char* const path,char** tokens,char* in);
+
 int main()
 {
 	//255 characters allowed
-	char *in = malloc (sizeof(*in)*(MAXIMUM_P_SIZE));
 	int i; 
 	char buffer;
 	int length;
 	int continueflag=0;
 	int position=0;
+	char *in = malloc (sizeof(*in)*(MAXIMUM_P_SIZE));
 	char* result_path = malloc(sizeof(*result_path)*280);
 	char** tokens = malloc(sizeof(*tokens)*MAXIMUM_SIZE);
 	char* cwd = malloc(sizeof(*cwd)*200);	
@@ -83,44 +84,22 @@ int main()
 		{
 			cdfunction(tokens,length);
 		}
+		else if(strcmp(tokens[0],"exit")==STRING_EQUAL)
+		{
+			exit(EXIT_SUCCESS);
+		}
 		//deal with file name input
 		else
 		{
 			//child process
 			if(fork()==0)
 			{
-				strcpy(result_path,"/bin/");
-				strcat(result_path, tokens[0]);
-				tokens[0] = result_path;
-				if(execv(result_path,tokens) == -1) 
-				{
-				//save the errno
-				int errsv = errno;
-				if(errsv!=ENOENT)	 printf("%s: unknown error",in);	
-				}
-
-				strcpy(result_path,"/usr/bin/");
-				strcat(result_path, tokens[0]);
-				tokens[0] = result_path;				
-				if(execv(result_path,tokens) == -1) 
-				{
-				int errsv = errno;
-				if(errsv!=ENOENT)	 printf("%s: unknown error",in);	
-				}
-
-				strcpy(result_path,"./");
-				strcat(result_path, tokens[0]);
-				tokens[0] = result_path;
-				if(execv(result_path,tokens) == -1) 
-				{
-				int errsv = errno;
-				//printf("error number is%d\n",errsv);								
-				if(errsv!=ENOENT)	 printf("%s: unknown error",in);	
-				else	NOT_FOUND(in);
-				}
-				
+				executeFile(result_path,"/bin/",tokens,in);
+				executeFile(result_path,"/usr/bin/",tokens,in);
+				executeFile(result_path,"./",tokens,in);
 			}
 		}
+	
 		wait(NULL);
 	}
 	free(result_path);
@@ -155,4 +134,18 @@ void initialize(char** tokens)
 	{
 		tokens[i]=0;
 	}	
+}
+
+void executeFile(char *result_path,const char* const path,char** tokens,char* in)
+{
+	strcpy(result_path,path);
+	strcat(result_path, tokens[0]);
+	tokens[0] = result_path;
+	if(execv(result_path,tokens) == -1) 
+	{
+		//save the errno
+		int errsv = errno;
+		if(errsv!=ENOENT)	 printf("%s: unknown error\n",in);	
+		else if(strcmp(path,"./")==STRING_EQUAL)	NOT_FOUND(in);
+	}
 }

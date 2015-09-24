@@ -16,25 +16,54 @@ int splitLine(char* str,char** tokens);
 void cdfunction(char** tokens, int length);
 void initialize(char** tokens);
 void executeFile(char *result_path,const char* const path,char** tokens,char* in);
+//int parent_pid;
+
+
+void shellsighandler(int signum)
+{
+	if(SIGINT==signum||SIGTERM==signum||SIGQUIT==signum||SIGTSTP==signum)
+	{
+		printf("\n");
+	}
+}
+
 
 int main()
-{
+{	
 	//255 characters allowed
+	int st;
 	int i; 
 	char buffer;
 	int length;
 	int continueflag=0;
 	int position=0;
 	char *in = malloc (sizeof(*in)*(MAXIMUM_P_SIZE));
-	char* result_path = malloc(sizeof(*result_path)*280);
-	char** tokens = malloc(sizeof(*tokens)*MAXIMUM_SIZE);
+	char* result_path = malloc(sizeof(*result_path)*260);
+//	char** tokens = malloc(sizeof(*tokens)*MAXIMUM_SIZE);
+	char *tokens[255];
+//	char* abcd=malloc(sizeof(char)*30);
+//	memset(abcd,0,30);
+	//
 	char* cwd = malloc(sizeof(*cwd)*200);	
+	struct sigaction shell;
+//	sigset_t childset = child.sa_mask;
+	sigset_t shellset = shell.sa_mask;
+//	child.sa_handler = SIG_DFL;
+	sigemptyset(&shellset);
+	//sigemptyset(&childset);
+//	shell.sa_handler = SIG_IGN;	
+	shell.sa_handler = shellsighandler;	
+	sigaction(SIGINT,&shell,NULL);
+	sigaction(SIGTERM,&shell,NULL);
+	sigaction(SIGQUIT,&shell,NULL);
+	sigaction(SIGTSTP,&shell,NULL);
+//	parent_pid = getpid();
 	while(TRUE)
 	{
 		position = 0;
 		//set all strings to null
 		initialize(tokens);
-		memset(in,'\0',MAXIMUM_P_SIZE);
+		memset(in,0,MAXIMUM_P_SIZE);
 		//basic prestring: path and shell name
 		printf("[My Shell:");
 		printf("%s",getcwd(cwd,200));
@@ -59,16 +88,17 @@ int main()
 		//try to get all parameters
 		length = splitLine(in,tokens);			
 		//switch case		
-		if(strcmp(in,"help") == STRING_EQUAL)
+		if(strcmp(tokens[0],"help") == STRING_EQUAL)
 		{
 			printf("List of functions you need\n");
 		}
 		//else if(*in=='') continue;
-		else if(*in=='/'||*in=='.')
+		else if(tokens[0][0]=='/'||tokens[0][0]=='.')
 		{
 			//create and run child in if
 			if(!fork())
 			{
+				shell.sa_handler = SIG_DFL;
 				if(execv(tokens[0],tokens) == -1) 
 				{
 				//save the errno
@@ -77,6 +107,7 @@ int main()
 				if(errsv==ENOENT)	NOT_FOUND(in);
 				else printf("%s: unknown error",in);	
 				}
+				exit(EXIT_SUCCESS);
 			}
 			//parent wait for the child
 		}
@@ -87,7 +118,11 @@ int main()
 		}
 		else if(strcmp(tokens[0],"exit")==STRING_EQUAL)
 		{
-			exit(EXIT_SUCCESS);
+			if(length==1)
+			{
+				exit(EXIT_SUCCESS);
+			}
+			else	printf("exit: wrong number of arguments\n");
 		}
 		//deal with file name input
 		else
@@ -95,12 +130,13 @@ int main()
 			//child process
 			if(fork()==0)
 			{
+				shell.sa_handler = SIG_DFL;
 				executeFile(result_path,"/bin/",tokens,in);
 				executeFile(result_path,"/usr/bin/",tokens,in);
 				executeFile(result_path,"./",tokens,in);
+				exit(EXIT_FAILURE);
 			}
 		}
-	
 		wait(NULL);
 	}
 	free(result_path);
@@ -133,7 +169,7 @@ void initialize(char** tokens)
 	int i;
 	for(i=0;i<MAXIMUM_SIZE;i++)
 	{
-		tokens[i]=0;
+		tokens[i]="";
 	}	
 }
 
@@ -146,7 +182,8 @@ void executeFile(char *result_path,const char* const path,char** tokens,char* in
 	{
 		//save the errno
 		int errsv = errno;
-		if(errsv!=ENOENT)	 printf("%s: unknown error\n",in);	
+		printf("errno:%d\n",errsv);
+		if(errsv!=ENOENT)	printf("%s: unknown error\n",in);	
 		else if(strcmp(path,"./")==STRING_EQUAL)	NOT_FOUND(in);
 	}
 }

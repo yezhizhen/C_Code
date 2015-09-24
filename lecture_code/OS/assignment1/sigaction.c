@@ -21,19 +21,19 @@ int main()
 	{
 		if(oldact.sa_handler==SIG_DFL)
 		{
-			printf("original is signal default mechanism\n");
+			printf("original SIGINT is signal  default mechanism\n");
 		}
 		else if(oldact.sa_handler==SIG_IGN)
 		{
 
-			printf("originally signal is ignored\n");
+			printf("originally SIGINT signal SIGINT is ignored\n");
 		}
 	}
 
-	if(sigaction(SIGINT,&newact,NULL)==-1)
+	/*if(sigaction(SIGINT,&newact,NULL)==-1)
 	{
 		perror("error to set new sigaction\n");
-	}
+	}*/
 	if(sigaction(SIGQUIT,&newact,NULL)==-1)
 	{
 		perror("error to set new sigaction\n");
@@ -44,7 +44,12 @@ int main()
 		{
 			sigaddset(&nm,SIGINT);
 			sigprocmask(SIG_BLOCK,&nm,NULL);
-			
+			printf("SIGINT BLOCKED\n");				
+		}
+		else if(strcmp(oper,"unblock")==0)
+		{
+			sigprocmask(SIG_UNBLOCK,&nm,NULL);
+			printf("SIGINT UNBLOCKED\n");
 		}
 		sleep(1);
 		printf("sleeping....\n");

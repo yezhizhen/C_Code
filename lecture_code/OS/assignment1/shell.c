@@ -9,7 +9,7 @@
 #define TRUE 1
 #define STRING_EQUAL 0
 #define MAXIMUM_SIZE 255
-#define MAXIMUM_P_SIZE 256
+#define MAXIMUM_P_SIZE 257
 #define NOT_FOUND(in) printf("%s: command not found\n",in)
 
 int splitLine(char* str,char** tokens);
@@ -36,7 +36,7 @@ int main()
 	char buffer;
 	int length;
 	int continueflag=0;
-	int position=0;
+//	int position=0;
 	char *in = malloc (sizeof(*in)*(MAXIMUM_P_SIZE));
 	char* result_path = malloc(sizeof(*result_path)*260);
 //	char** tokens = malloc(sizeof(*tokens)*MAXIMUM_SIZE);
@@ -53,14 +53,14 @@ int main()
 	//sigemptyset(&childset);
 //	shell.sa_handler = SIG_IGN;	
 	shell.sa_handler = shellsighandler;	
-	sigaction(SIGINT,&shell,NULL);
+//	sigaction(SIGINT,&shell,NULL);
 	sigaction(SIGTERM,&shell,NULL);
 	sigaction(SIGQUIT,&shell,NULL);
 	sigaction(SIGTSTP,&shell,NULL);
 //	parent_pid = getpid();
 	while(TRUE)
 	{
-		position = 0;
+//		position = 0;
 		//set all strings to null
 		initialize(tokens);
 		memset(in,0,MAXIMUM_P_SIZE);
@@ -70,7 +70,7 @@ int main()
 		printf("]$ ");
 		//reading input and check if exceeds limit
 		//if(scanf("%256s", in) == EOF) continue;
-		while((buffer=getchar())!='\n'&&buffer!=EOF)
+		/*while((buffer=getchar())!='\n'&&buffer!=EOF)
 		{	
 			if(position==255)
 			{
@@ -80,9 +80,17 @@ int main()
 			break;
 			}
 			in[position++]=buffer;
+		}*/
+		fgets(in,MAXIMUM_P_SIZE,stdin);
+		if(in[strlen(in)-1]!='\n')
+		{
+			printf("Exceed maximum length 255\n");
+			while((buffer=getchar())!='\n'&& buffer != EOF);
+			continueflag = TRUE;
 		}
+		in[strlen(in)-1]='\0';
 		//if empty string 
-		if(!position) continue; 
+		if(!strlen(in)) continue; 
 		if(continueflag)	continue;
 		
 		//try to get all parameters
@@ -182,7 +190,7 @@ void executeFile(char *result_path,const char* const path,char** tokens,char* in
 	{
 		//save the errno
 		int errsv = errno;
-		printf("errno:%d\n",errsv);
+	//	printf("errno:%d\n",errsv);
 		if(errsv!=ENOENT)	printf("%s: unknown error\n",in);	
 		else if(strcmp(path,"./")==STRING_EQUAL)	NOT_FOUND(in);
 	}

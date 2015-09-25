@@ -51,12 +51,13 @@ int main()
 //	child.sa_handler = SIG_DFL;
 	sigemptyset(&shellset);
 	//sigemptyset(&childset);
-//	shell.sa_handler = SIG_IGN;	
-	shell.sa_handler = shellsighandler;	
-//	sigaction(SIGINT,&shell,NULL);
+	shell.sa_handler = SIG_IGN;	
+//	shell.sa_handler = shellsighandler;	
+	sigaction(SIGINT,&shell,NULL);
 	sigaction(SIGTERM,&shell,NULL);
 	sigaction(SIGQUIT,&shell,NULL);
 	sigaction(SIGTSTP,&shell,NULL);
+	int child_pid;
 //	parent_pid = getpid();
 	while(TRUE)
 	{
@@ -82,7 +83,7 @@ int main()
 			in[position++]=buffer;
 		}*/
 		fgets(in,MAXIMUM_P_SIZE,stdin);
-		if(in[strlen(in)-1]!='\n')
+		if(strlen(in)>0&&in[strlen(in)-1]!='\n')
 		{
 			printf("Exceed maximum length 255\n");
 			while((buffer=getchar())!='\n'&& buffer != EOF);
@@ -104,7 +105,7 @@ int main()
 		else if(tokens[0][0]=='/'||tokens[0][0]=='.')
 		{
 			//create and run child in if
-			if(!fork())
+			if(!(child_pid=fork()))
 			{
 				shell.sa_handler = SIG_DFL;
 				if(execv(tokens[0],tokens) == -1) 
@@ -136,7 +137,7 @@ int main()
 		else
 		{
 			//child process
-			if(fork()==0)
+			if((child_pid=fork())==0)
 			{
 				shell.sa_handler = SIG_DFL;
 				executeFile(result_path,"/bin/",tokens,in);
@@ -145,7 +146,7 @@ int main()
 				exit(EXIT_FAILURE);
 			}
 		}
-		wait(NULL);
+		waitpid(child_pid,NULL,WUNTRACED);
 	}
 	free(result_path);
 	free(tokens);

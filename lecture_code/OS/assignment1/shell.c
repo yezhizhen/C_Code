@@ -51,8 +51,8 @@ int main()
 //	child.sa_handler = SIG_DFL;
 	sigemptyset(&shellset);
 	//sigemptyset(&childset);
-	shell.sa_handler = SIG_IGN;	
-//	shell.sa_handler = shellsighandler;	
+//	shell.sa_handler = SIG_IGN;	
+	shell.sa_handler = shellsighandler;	
 	sigaction(SIGINT,&shell,NULL);
 	sigaction(SIGTERM,&shell,NULL);
 	sigaction(SIGQUIT,&shell,NULL);
@@ -107,7 +107,7 @@ int main()
 			//create and run child in if
 			if(!(child_pid=fork()))
 			{
-				shell.sa_handler = SIG_DFL;
+			//	shell.sa_handler = SIG_DFL;
 				if(execv(tokens[0],tokens) == -1) 
 				{
 				//save the errno
@@ -139,7 +139,7 @@ int main()
 			//child process
 			if((child_pid=fork())==0)
 			{
-				shell.sa_handler = SIG_DFL;
+//				shell.sa_handler = SIG_DFL;
 				executeFile(result_path,"/bin/",tokens,in);
 				executeFile(result_path,"/usr/bin/",tokens,in);
 				executeFile(result_path,"./",tokens,in);

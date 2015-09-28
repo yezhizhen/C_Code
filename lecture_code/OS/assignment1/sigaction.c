@@ -40,12 +40,14 @@ int main()
 	}
 	while(1)
 	{
+		//block the signal
 		if(strcmp(oper,"block")==0)
 		{
 			sigaddset(&nm,SIGINT);
 			sigprocmask(SIG_BLOCK,&nm,NULL);
 			printf("SIGINT BLOCKED\n");				
 		}
+		//unblock the signal
 		else if(strcmp(oper,"unblock")==0)
 		{
 			sigprocmask(SIG_UNBLOCK,&nm,NULL);

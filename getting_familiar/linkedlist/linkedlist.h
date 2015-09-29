@@ -6,5 +6,10 @@ typedef struct _nodes{
 	int value;
 	struct _nodes *next;
 } node;
-	
+
+
+typedef struct{
+	node *head;
+	node *tail;
+}List;
 #endif

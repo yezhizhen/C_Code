@@ -3,13 +3,13 @@
 
 //because compiler don't know what is node when we define next, we need to give struct a name
 typedef struct _nodes{
-	int value;
+	int* pvalue;
 	struct _nodes *next;
 } node;
 
 
 typedef struct{
-	node *head;
+	node *sentinal;
 	node *tail;
 }List;
 #endif

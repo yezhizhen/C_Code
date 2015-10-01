@@ -10,9 +10,8 @@
 void add(List *l, const int num)
 {
 		node *p = malloc(sizeof(*p));
-		p->pvalue = malloc(sizeof(*(p->pvalue)));
-		*(p->pvalue) = num;
-		p->next = l->sentinal;
+		p->value = num;
+		p->next = NULL;
 		l->tail->next = p;
 		l->tail = p;
 }
@@ -20,9 +19,9 @@ void add(List *l, const int num)
 void printall(List* list)
 {
 	node *p;
-	for(p=list->sentinal->next;p->pvalue;p=p->next)
+	for(p=list->sentinal->next;p;p=p->next)
 	{
-		printf("%d\t",*(p->pvalue));
+		printf("%d\t",p->value);
 	}
 }
 
@@ -31,23 +30,26 @@ void delete(List* list, int number)
 	node *p = list->sentinal->next;	
 	
 	node *back = list->sentinal;
+	
 	//every time use ->, check if pointer is NULL
-	for(;p->pvalue;back = p,p=p->next)
+	for(;p;back = p,p=p->next)
 	{
-		if(*(p->pvalue)==number)
+		if(p->value==number)
 		{
 			back->next = p->next;
 			free(p);
-			break;
+			printf("deleted\n");
+			return;
 		}
 	}
+	printf("DELETE NOT FOUND");
 }
 
 void clean(List *list)
 {
 	node *p;
 	node *q;
-	for(p=list->sentinal->next,q=p;p->pvalue;p = q)
+	for(p=list->sentinal->next,q=p;p;p = q)
 	{
 		q = q->next;
 		free(p);
@@ -60,8 +62,8 @@ int main()
 {
 	List list;
 	node *sen = list.sentinal;
-	sen->pvalue = NULL;
-	sen->next = sen;
+	sen->next = NULL;
+	sen->value = 0;
 	list.tail = sen;
 	//list.head = NULL;
 	int number;

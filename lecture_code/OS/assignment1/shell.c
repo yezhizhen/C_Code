@@ -1,3 +1,4 @@
+#include <glob.h>
 #include <stdio.h>
 #include <signal.h>
 #include <stdlib.h>
@@ -56,7 +57,7 @@ void delete(jobs *jbs, int pid_)
 		pre = find;
 		find = find->next;
 	}
-	printf("pid:%d not found in the job list!\n",pid_);
+//	printf("pid:%d not found in the job list!\n",pid_);
 }
 
 void listjobs(jobs *jbs)
@@ -91,18 +92,60 @@ pid_t foreground(int index, jobs *jbs)
 	return 0;
 }
 
+typedef struct
+{
+	int k;
+	glob_t* pgl;
+}wild;
 
+wild wildexpand(char** tokens)
+{
+	int i=1;
+	int flags=0;
+	int k=0;
+	int num;
+	glob_t *pgl = malloc(sizeof(*pgl));
+	//traverse all the tokens
+	//while(tokens[i]&&strcmp(tokens[i],"")!=STRING_EQUAL)
+	while(tokens[i]&&tokens[i]&&strcmp(tokens[i],"")!=STRING_EQUAL)
+	{
+		glob(tokens[i],flags,NULL,pgl);
+		if(pgl->gl_pathc>0&&k==0)
+		{
+			flags=GLOB_APPEND;
+			k = i;
+		}
+		i++;
+	}
+	//add all matched files
+	for(num=0;num<pgl->gl_pathc;k++,num++)
+	{
+		tokens[k]=pgl->gl_pathv[num];	
+		//printf("tokens[%d]:%s \n",k,tokens[k]);
+	}
+	wild a;
+	a.k=k;
+	a.pgl = pgl;
+	//k is the final file index+1
+	return a; 	
+}
+
+int length;
 int main()
 {	
 	//255 characters allowed
 	int st;
 	int i; 
+	int isa,isb;
 	char buffer;
-	int length;
 	int continueflag=0;
 	char *in = malloc (sizeof(*in)*(MAXIMUM_P_SIZE));
 	char* result_path = malloc(sizeof(*result_path)*260);
 	char *tokens[255];
+	//for(isb=0;isb<255;isb++)
+	//{
+	//	tokens[isb] = malloc(sizeof(char)*30);
+	//}
 	char* cwd = malloc(sizeof(*cwd)*200);	
 	struct sigaction shell;
 	sigset_t shellset = shell.sa_mask;
@@ -123,9 +166,8 @@ int main()
 	{
 		status = 0;
 		child_pid=0;
-		//set all strings to null
-		initialize(tokens);
 		memset(in,0,MAXIMUM_P_SIZE);
+		initialize(tokens);
 		//basic prestring: path and shell name
 		printf("[My Shell:");
 		printf("%s",getcwd(cwd,200));
@@ -142,7 +184,11 @@ int main()
 		if(!strlen(in)) continue; 
 		if(continueflag)	continue;
 		//try to get all parameters
-		length = splitLine(in,tokens);			
+		length = splitLine(in,tokens);
+		wild m;
+		m.k = -1;		
+		if(length>1)	m = wildexpand(tokens);
+		if(m.k>length)	length=m.k;
 		//switch case		
 		if(strcmp(tokens[0],"help") == STRING_EQUAL)
 		{
@@ -170,6 +216,10 @@ int main()
 			}
 			//parent wait for the child
 		}
+		/*else if(strcmp(tokens[0],"ls")==0&&length>1&&tokens[1][0]!='-')
+		//{*/
+		//	wildexpand(tokens);
+		//}
 		//deal with cd comand
 		else if(strcmp(tokens[0],"cd")==STRING_EQUAL)
 		{
@@ -207,6 +257,7 @@ int main()
 				printf("fg: wrong number of arguments\n");
 			}
 		}
+		
 		//deal with file name input
 		else
 		{
@@ -233,16 +284,25 @@ int main()
 			printf("\n%d:suspended\n",child_pid);
 			add(&jbs, child_pid,in);	
 		}
-		if(WIFSIGNALED(status))
+		if(WIFSIGNALED(status)||WIFEXITED(status))
 		{
-			printf("\n%d:terminated\n",child_pid);
-			delete(&jbs, child_pid);
-		}		
+			if(WIFSIGNALED(status))
+				printf("\n%d:terminated\n",child_pid);
+			if(child_pid!=0)
+				delete(&jbs, child_pid);
+		}
+		if(m.k!=-1)
+			free(m.pgl);
+		m.pgl=NULL;		
 	}
 	free(result_path);
 	free(tokens);
 	free(in);	
 	free(cwd);
+	for(isa=0;isa<255;isa++)
+	{
+		free(tokens[isa]);
+	}
 	return 0;
 }
 
@@ -251,12 +311,16 @@ int splitLine(char *str, char** tokens)
 	char *temp=malloc(sizeof(*temp)*260);
 	strcpy(temp,str);
 	int k=0;
-	tokens[0] = strtok(temp," \t");    		
-	while(tokens[k]!=NULL)
+	//printf("I'm naughty\n");
+	//if not NULL
+	tokens[k]=strtok(temp," \t");
+	while(tokens[k])
 	{
+	//	printf("%d\n",k);
    		k++;
-    	tokens[k] = strtok(NULL," ");
+		tokens[k]=strtok(NULL," \t");
 	}
+	//printf("ha\n");
 	return k;
 	free(temp);
 }
@@ -281,21 +345,13 @@ void executeFile(char *result_path,const char* const path,char** tokens,char* in
 	strcpy(result_path,path);
 	strcat(result_path, tokens[0]);
 	tokens[0] = result_path;
-	int i=1;
-	//traverse all the tokens
-	while(tokens[i])
-	{
-		for(int t=0;t<strlen(tokens[i]);t++)
-		{
-			
-		}
-		i++;
-	}
+	tokens[length]=NULL;
+	//printf("tokens[0]:%s\n",tokens[0]);
 	if(execv(result_path,tokens) == -1) 
 	{
 		//save the errno
 		int errsv = errno;
-	//	printf("errno:%d\n",errsv);
+		//printf("errno:%d\n",errsv);
 		if(errsv!=ENOENT)	printf("%s: unknown error\n",in);	
 		else if(strcmp(path,"./")==STRING_EQUAL)	NOT_FOUND(in);
 	}

@@ -31,7 +31,6 @@ typedef struct {
 
 void add(jobs *jbs, int pid_,const char* command)
 {
-	printf("add!\n");
 	job *new_jb = malloc(sizeof(job));
 	new_jb->pid = pid_;
 	new_jb->next = NULL;
@@ -39,7 +38,6 @@ void add(jobs *jbs, int pid_,const char* command)
 	strcpy(new_jb->cm,command);
 	jbs->tail->next = new_jb;
 	jbs->tail= new_jb;
-	printf("new job:%s\n",jbs->tail->cm);
 }
 
 void delete(jobs *jbs, int pid_)
@@ -50,11 +48,6 @@ void delete(jobs *jbs, int pid_)
 	{
 		if(find->pid==pid_)
 		{
-			//if it is the tail
-			if(find==jbs->tail)
-			{	
-				jbs->tail=pre;
-			}
 			pre->next = find->next;
 			free(find);
 			free(find->cm);
@@ -70,9 +63,6 @@ void delete(jobs *jbs, int pid_)
 void listjobs(jobs *jbs)
 {
 	job *temp=jbs->sentinel;
-	//printf("INside list:Now the tail:%s\n",jbs->tail->cm);
-	//printf("INside list:Now the 1:%s\n",jbs->sentinel->next->cm);
-	
 	int i=1;
 	//while still has next
 	while(temp=temp->next)
@@ -83,7 +73,7 @@ void listjobs(jobs *jbs)
 	if(i==1)	printf("No suspended jobs\n");
 }
 
-int foreground(int index, jobs *jbs)
+job* foreground(int index, jobs *jbs)
 {
 	job *temp=jbs->sentinel;
 	int i=1;
@@ -96,7 +86,7 @@ int foreground(int index, jobs *jbs)
 			tcsetpgrp(0,temp->pid);
 			killpg(temp->pid,SIGCONT);
 			//set
-			return temp->pid;
+			return temp;
 		}
 		i++;
 	}	
@@ -150,7 +140,6 @@ int notin(pid_t p,jobs* jbs)
 		if(temp->pid == p)
 			return 0;
 	}
-	printf("not in the list\n");
 	return 1;
 }
 /*int traversepipe(char **tokens)
@@ -222,6 +211,7 @@ int main()
 		newtoken[0] = strtok(cop,"|");
 		int inp=0;
 		//while newtoken is not NULL
+		
 		while(newtoken[num_pro])
 		{
 			newtoken[++num_pro] = strtok(NULL,"|");
@@ -238,9 +228,8 @@ int main()
 				//handle the first
 				if(ppp == 0)
 				{
-					//remember the first child_pid. The following child will have this variable
+					//remember the first child_pid
 					child_pid = fork();
-
 					//handle children
 					if(child_pid==0)
 					{
@@ -275,30 +264,19 @@ int main()
 				close(fds[1]);
 		}
 		//handle the last
-		//for the last one(or single one)
-		pid_t temmm = fork();
-		if(num_pro==1)	child_pid = temmm;
-		if(temmm == 0)	in = newtoken[num_pro-1];
-		if(inp!=0)
+		if(num_pro != 1)
 		{
-			//the parent still has stdout as the output, which is copied to the child
-			dup2(inp,0);
-			close(inp);
+			//for the last one
+			if(fork==0)
+			{
+				in = newtoken[num_pro-1];
+				dup2(inp,0);
+				close(inp);
+				//the parent still has stdout as the output, which is copied to the child
+			}
 		}	
 		//try to get all parameters
 		length = splitLine(in,tokens);
-		if(	
-				strcmp(tokens[0],"fg")==0||
-				strcmp(tokens[0],"exit")==0||
-				strcmp(tokens[0],"help")==0||
-				strcmp(tokens[0],"jobs")==0
-		  )
-		{
-			//if 0, then send to all
-			//printf("kills\n");
-			kill(child_pid,SIGKILL);
-			child_pid = 0;
-		}
 		wild m;
 		m.k = -1;		
 		if(length>1)	m = wildexpand(tokens);
@@ -309,17 +287,15 @@ int main()
 			printf("List of functions you need\n");
 		}
 		//else if(*in=='') continue;
-		else if(getpid()!=parent_pid&&tokens[0][0]=='/'||tokens[0][0]=='.')
+		else if(tokens[0][0]=='/'||tokens[0][0]=='.')
 		{
 			//create and run child in if
-			//if(!(child_pid=fork()))
-			//{
-				setpgid(getpid(),child_pid);
-				tcsetpgrp(0,child_pid);
+			if(!(child_pid=fork()))
+			{
+				setpgrp();
+				tcsetpgrp(0,getpid());
 				signal(SIGTTIN,SIG_IGN);
 				signal(SIGTTOU,SIG_IGN);
-				signal(SIGINT,SIG_DFL);
-				signal(SIGQUIT,SIG_DFL);
 				signal(SIGTERM,SIG_DFL);
 				signal(SIGTSTP,SIG_DFL);
 				if(execv(tokens[0],tokens) == -1) 
@@ -331,7 +307,7 @@ int main()
 					else printf("%s: unknown error",in);	
 				}
 				exit(EXIT_SUCCESS);
-			//}
+			}
 			//parent wait for the child
 		}
 		//deal with cd comand
@@ -358,15 +334,17 @@ int main()
 		//deal with jobs command
 		else if(strcmp(tokens[0],"jobs")==STRING_EQUAL)
 		{
-			printf("Before list:Now the tail:%s\n",jbs.tail->cm);
 			listjobs(&jbs);
 		}
 		else if(strcmp(tokens[0],"fg")==STRING_EQUAL)
 		{
 			if(length==2)
 			{
-				int te;
-				child_pid = foreground(atoi(tokens[1]),&jbs);
+				job* te;
+				if(te = foreground(atoi(tokens[1]),&jbs))
+					{
+						child_pid = te->pid;
+					}
 			}
 			else
 			{
@@ -378,12 +356,10 @@ int main()
 		else
 		{
 			//child process
-			if(getpid()!=parent_pid)
+			if((child_pid=fork())==0)
 			{
-				setpgid(getpid(),child_pid);
-				tcsetpgrp(0,child_pid);
-				//setpgrp();
-				//tcsetpgrp(0,getpid());
+				setpgrp();
+				tcsetpgrp(0,getpid());
 				signal(SIGINT,SIG_DFL);
 				signal(SIGQUIT,SIG_DFL);
 				signal(SIGTERM,SIG_DFL);
@@ -403,8 +379,8 @@ int main()
 			tcsetpgrp(0,child_pid);
 			waitpid(-child_pid,&status,WUNTRACED);
 		}
-		tcsetpgrp(0,parent_pid);
-		//printf("%d\n", getpid());
+		tcsetpgrp(0,getpid());
+		printf("%d\n", getpid());
 		//if child is stopped
 		if(WIFSTOPPED(status))
 		{
@@ -412,24 +388,18 @@ int main()
 			//foreground would be add.
 			if(notin(child_pid,&jbs))
 				add(&jbs, child_pid,in);	
-			printf("Now the tail:%s\n",jbs.tail->cm);
 		}
-		//int kkkk=0;
-		if(child_pid!=0&&(WIFSIGNALED(status)||WIFEXITED(status)))//&&
+		if(WIFSIGNALED(status)||WIFEXITED(status))
 		{
-			if(WIFSIGNALED(status)&&child_pid!=0)
+			if(WIFSIGNALED(status))
 				printf("\n%d:terminated\n",child_pid);
+				
 			if(child_pid!=0)
 			{
-				//printf("delete!\n");
-				//printf("Now the tail:%s\n",jbs.tail->cm);
 				delete(&jbs, child_pid);
 				killpg(child_pid,SIGKILL);
-				//printf("Now the tail:%s\n",jbs.tail->cm);
-				//printf("Now the first after delete:%s\n",jbs.sentinel->next->cm);
 			}
 		}
-			//printf("Now the tail:%s\n",jbs.tail->cm);
 		if(m.k!=-1)
 			free(m.pgl);
 		m.pgl=NULL;		

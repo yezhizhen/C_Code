@@ -10,14 +10,12 @@ int main()
 	char **str=malloc(sizeof(*str)*50);
 	memset(str,0,50);
 
-	str[0]="./abc";
+	str[0]="./a.out";
 	for(i=0;str[i]!=NULL;i++)
 	{
 		printf("str[%d]:%s\n",i,str[i]);
-
-
 	}		
-	execv("./abc",str);
+	execv("./a.out",str);
 	int errsv = errno;
 	printf("errno:%d\n",errsv);	
 	return(0);

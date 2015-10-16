@@ -19,7 +19,7 @@ int main()
     fprintf(stdout,"read from itself:%s\n",redbuf);	
 	int childpid;
 	//let child write
-	/*if((childpid=fork())==0)
+	if((childpid=fork())==0)
 	{
 		printf("child: pipefd[0]:%d\n",pipefd[0]);
 		printf("child: pipefd[1]:%d\n",pipefd[1]);
@@ -32,9 +32,9 @@ int main()
 		close(pipefd[1]);
 		waitpid(childpid,NULL,WUNTRACED);
 		//if comment this part, file cat would read from stdin
-		dup2(pipefd[0],STDIN_FILENO);
+		//dup2(pipefd[0],STDIN_FILENO);
 		execvp(b[0],b);
 	}
-	*/
+	
 	return 0;
 }

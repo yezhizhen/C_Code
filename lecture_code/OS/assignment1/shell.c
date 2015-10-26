@@ -31,7 +31,7 @@ typedef struct {
 
 void add(jobs *jbs, int pid_,const char* command)
 {
-	printf("add!\n");
+//	printf("add!\n");
 	job *new_jb = malloc(sizeof(job));
 	new_jb->pid = pid_;
 	new_jb->next = NULL;
@@ -39,7 +39,7 @@ void add(jobs *jbs, int pid_,const char* command)
 	strcpy(new_jb->cm,command);
 	jbs->tail->next = new_jb;
 	jbs->tail= new_jb;
-	printf("new job:%s\n",jbs->tail->cm);
+//	printf("new job:%s\n",jbs->tail->cm);
 }
 
 void delete(jobs *jbs, int pid_)
@@ -150,7 +150,7 @@ int notin(pid_t p,jobs* jbs)
 		if(temp->pid == p)
 			return 0;
 	}
-	printf("not in the list\n");
+//	printf("not in the list\n");
 	return 1;
 }
 /*int traversepipe(char **tokens)
@@ -191,15 +191,20 @@ int main()
 	pid_t child_pid;
 	signal(SIGTTIN,SIG_IGN);
 	signal(SIGTTOU,SIG_IGN);
+	//printf("parent id:%d\n",parent_pid);
 	int status;
+	int savestdin = dup(0);
+	int savestdout = dup(1);
+	//printf("savestdin:%d,savestdout%d\n",savestdin,savestdout);
 	while(TRUE)
 	{
+		//printf("loop id:%d\n",getpid());
 		status = 0;
 		child_pid=0;
 		memset(in,0,MAXIMUM_P_SIZE);
 		initialize(tokens);
 		//basic prestring: path and shell name
-		printf("\x1B[35m[My Shell:");
+		printf("\x1B[32m[My Shell:");
 
 		printf("%s",getcwd(cwd,200));
 		printf("]$ ");
@@ -240,7 +245,6 @@ int main()
 				{
 					//remember the first child_pid. The following child will have this variable
 					child_pid = fork();
-
 					//handle children
 					if(child_pid==0)
 					{
@@ -269,29 +273,43 @@ int main()
 						}
 					}
 				}
+				//close unused fds[0] for parent
 				//for parent
 				inp = fds[0];
-				close(fds[0]);
+				//if(ppp<num_pro-2)
+				//	close(fds[0]);
 				close(fds[1]);
 		}
 		//handle the last
 		//for the last one(or single one)
-		pid_t temmm = fork();
+		//don't let other child fork
+		pid_t temmm = -1;
+		if(getpid()==parent_pid)
+			temmm = fork();
 		if(num_pro==1)	child_pid = temmm;
 		if(temmm == 0)	in = newtoken[num_pro-1];
-		if(inp!=0)
+		if(inp!=0&&(temmm==0||getpid()==parent_pid))
 		{
 			//the parent still has stdout as the output, which is copied to the child
 			dup2(inp,0);
 			close(inp);
+			//you have to set 1 back to stdout
+			dup2(savestdout,1);
 		}	
+		//set parent back to stdin,stdout
+		if(getpid()==parent_pid)
+		{
+			dup2(savestdin,0);
+			dup2(savestdout,1);
+		}
 		//try to get all parameters
 		length = splitLine(in,tokens);
 		if(	
 				strcmp(tokens[0],"fg")==0||
 				strcmp(tokens[0],"exit")==0||
 				strcmp(tokens[0],"help")==0||
-				strcmp(tokens[0],"jobs")==0
+				strcmp(tokens[0],"jobs")==0||
+				strcmp(tokens[0],"cd")==0
 		  )
 		{
 			//if 0, then send to all
@@ -358,7 +376,7 @@ int main()
 		//deal with jobs command
 		else if(strcmp(tokens[0],"jobs")==STRING_EQUAL)
 		{
-			printf("Before list:Now the tail:%s\n",jbs.tail->cm);
+			//printf("Before list:Now the tail:%s\n",jbs.tail->cm);
 			listjobs(&jbs);
 		}
 		else if(strcmp(tokens[0],"fg")==STRING_EQUAL)
@@ -412,7 +430,7 @@ int main()
 			//foreground would be add.
 			if(notin(child_pid,&jbs))
 				add(&jbs, child_pid,in);	
-			printf("Now the tail:%s\n",jbs.tail->cm);
+			//printf("Now the tail:%s\n",jbs.tail->cm);
 		}
 		//int kkkk=0;
 		if(child_pid!=0&&(WIFSIGNALED(status)||WIFEXITED(status)))//&&
